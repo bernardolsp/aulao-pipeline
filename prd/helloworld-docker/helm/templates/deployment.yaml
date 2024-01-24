@@ -1,0 +1,23 @@
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}
+  name: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.helloWorld.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - image: {{ .Values.helloWorld.image }}
+        name: {{ .Release.Name }}
+        ports:
+        - containerPort: {{ .Values.helloWorld.port }}
+        imagePullPolicy: {{ .Values.helloWorld.imagePullPolicy }}
