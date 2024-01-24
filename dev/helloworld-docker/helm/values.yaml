@@ -1,0 +1,5 @@
+helloWorld:
+  image: devlopesbernardo/devlopesbernardo/hello-world-go:c99bad7
+  replicas: 2
+  port: 8080
+  imagePullPolicy: Always
