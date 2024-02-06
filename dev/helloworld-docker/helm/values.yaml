@@ -1,5 +1,5 @@
 helloWorld:
-  image: $image_name
+  image: $image_name $image_name
   replicas: 2
   port: 8080
   imagePullPolicy: Always
