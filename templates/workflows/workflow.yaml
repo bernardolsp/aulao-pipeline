@@ -6,23 +6,6 @@ metadata:
 spec:
   entrypoint: clone
 
-  volumeClaimTemplates:
-  - metadata:
-      name: workdir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
-  
-  volumes:
-  - name: docker-credentials
-    secret:
-      secretName: docker-credentials
-      items: 
-      - key: config.json
-        path: config.json
-
   templates:
   - name: clone
     steps:

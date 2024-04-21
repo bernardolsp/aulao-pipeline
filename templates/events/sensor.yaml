@@ -23,6 +23,22 @@ spec:
                 namespace: argo
                 generateName: {{ .Release.Name }}-pipeline-
               spec:
+              volumeClaimTemplates:
+              - metadata:
+                  name: workdir
+                spec:
+                  accessModes: [ "ReadWriteOnce" ]
+                  resources:
+                    requests:
+                      storage: 1Gi
+              
+              volumes:
+              - name: docker-credentials
+                secret:
+                  secretName: docker-credentials
+                  items: 
+                  - key: config.json
+                    path: config.json
                 entrypoint: clone
                 templates: 
                   - name: clone
