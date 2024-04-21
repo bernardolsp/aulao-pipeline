@@ -7,7 +7,7 @@ spec:
     serviceAccountName: argo-events-webhook-sa
   dependencies:
     - name: {{ .Release.Name }}-webhook
-      eventSourceName: {{ .Release.Name }}-webhook}}
+      eventSourceName: {{ .Release.Name }}-webhook
       eventName: {{ .Release.Name }}-webhook
   triggers:
     - template:
