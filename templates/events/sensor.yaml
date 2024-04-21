@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: {{ .Release.Name }}-webhook-sensor
+spec:
+  template:
+    serviceAccountName: argo-events-webhook-sa
+  dependencies:
+    - name: {{ .Release.Name }}-webhook
+      eventSourceName: {{ .Release.Name }}-webhook}}
+      eventName: {{ .Release.Name }}-webhook
+  triggers:
+    - template:
+        name: webhook-pod-trigger
+        k8s:
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                namespace: argo
+                generateName: {{ .Release.Name }}-pipeline-
+              spec:
+                templates: 
+                  - name: clone
+                    steps:
+                      - - name: clone
+                          templateRef:
+                            name: {{ .Release.Name }}-pipeline
+                            template: clone-repo
