@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+kind: WorkflowTemplate
 metadata:
-  generateName: {{ .Release.Name }}-pipeline-
+  name: {{ .Release.Name }}-pipeline
   namespace: argo
 spec:
   entrypoint: clone
@@ -37,7 +37,19 @@ spec:
         arguments:
           parameters:
           - name: commit
-            value: "{{steps.get-hash.outputs.parameters.result}}"
+            value: "{{`{{steps.get-hash.outputs.parameters.result}}`}}"
+    - - name: clone-yaml-repo
+        template: clone-yaml-repo
+    - - name: list-yaml
+        template: list-yaml
+    - - name: sed-yaml
+        template: sed-yaml
+        arguments:
+          parameters:
+          - name: commit
+            value: "{{`{{steps.get-hash.outputs.parameters.result}}`}}"
+    - - name: commit-push
+        template: commit-push
 
   - name: clone-repo
     container: 
@@ -48,15 +60,16 @@ spec:
       - name: workdir
         mountPath: /src
 
+{{ if eq .Values.application.language "go"}}
   - name: test
     container: 
-      image: {{ If .Values.application.language "go" "golang:1.22" }}
+      image: golang:1.22
       command: [sh, -c]
       args: ["cd /src && go get . && go test -v ."]
       volumeMounts:
       - name: workdir
         mountPath: /src
-
+{{ end }}
   - name: get-hash
     container: 
       image: alpine/git
@@ -81,7 +94,7 @@ spec:
       args: 
         - --context=/src
         - --dockerfile=/src/Dockerfile
-        - --destination={{ .Values.application.containerRepository }}:{{inputs.parameters.commit}}
+        - --destination={{ .Values.application.containerRepository }}:{{`{{inputs.parameters.commit}}`}}
         - --destination={{ .Values.application.containerRepository }}:latest
       volumeMounts:
       - name: workdir
@@ -92,11 +105,10 @@ spec:
   - name: clone-yaml-repo
     container: 
       image: alpine/git
-      command: [git]
-      args: 
-      - clone
-      - https://$GIT_TOKEN@{{ .Values.application.yamlRepo }}
-      - /src/yamlrepo
+      command: [sh, -c]
+      args:
+      -  |
+        git clone https://$GIT_TOKEN@{{ .Values.application.yamlRepo }} /src/yamlrepo
       volumeMounts:
       - name: workdir
         mountPath: /src
@@ -107,11 +119,27 @@ spec:
             name: git-token
             key: token
 
-  - name: sed-yaml
+  - name: list-yaml
     container: 
-      image: alpine/sed
-      command: [sed]
-      args: ["-i", "/^ *image:/s|.*|  image: {{ .Values.application.containerRepository }}:{{inputs.parameters.commit}} |", "/src/yamlrepo/values.yaml"]
+      image: alpine
+      command: [sh, -c]
+      args: 
+      - ls -la /src/yamlrepo && cat /src/yamlrepo/values.yaml
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+
+  - name: sed-yaml
+    inputs:
+      parameters:
+      - name: commit
+    container: 
+      image: alpine
+      command: [sh, -c]
+      args: 
+      - 'sed -i "/^ *image:/s|.*|  image: {{ .Values.application.containerRepository }}:{{`{{inputs.parameters.commit}}`}}|" /src/yamlrepo/values.yaml'
+      - ls -la /src/yamlrepo
+      - cat /src/yamlrepo/values.yaml
       volumeMounts:
       - name: workdir
         mountPath: /src
@@ -121,13 +149,15 @@ spec:
       image: alpine/git
       command: [sh, -c]
       args: 
-        - cd /src/yamlrepo 
-        - git config --local user.email "action@github.com"
-        - git config --local user.name "Argo Workflows"
-        - git add . 
-        - git commit -m 'Update image'
-        - git push
+        - |
+           cd /src/yamlrepo 
+           ls
+           cat .git/config
+           git config --local user.email "action@github.com"
+           git config --local user.name "Argo Workflows"
+           git add . 
+           git commit -m 'Update image'
+           git push
       volumeMounts:
       - name: workdir
         mountPath: /src
-      
