@@ -7,7 +7,7 @@ spec:
     ports:
       - port: 12000
         targetPort: 12000
-  {{ .Release.Name }}-webhook:
+  webhook:
     example:
       port: "12000"
       endpoint: /
