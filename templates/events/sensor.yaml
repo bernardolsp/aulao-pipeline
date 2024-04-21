@@ -23,6 +23,7 @@ spec:
                 namespace: argo
                 generateName: {{ .Release.Name }}-pipeline-
               spec:
+                entrypoint: clone
                 templates: 
                   - name: clone
                     steps:
