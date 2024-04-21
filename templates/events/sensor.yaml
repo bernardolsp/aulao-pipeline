@@ -38,11 +38,11 @@ spec:
                     items: 
                     - key: config.json
                       path: config.json
-                  entrypoint: clone
-                  templates: 
-                    - name: clone
-                      steps:
-                        - - name: clone
-                            templateRef:
-                              name: {{ .Release.Name }}-pipeline
-                              template: clone-repo
+                entrypoint: clone
+                templates: 
+                  - name: clone
+                    steps:
+                      - - name: clone
+                          templateRef:
+                            name: {{ .Release.Name }}-pipeline
+                            template: clone-repo
