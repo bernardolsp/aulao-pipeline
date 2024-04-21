@@ -38,7 +38,7 @@ spec:
                     items: 
                     - key: config.json
                       path: config.json
-                entrypoint: pipeline
+                entrypoint: clone
                 workflowTemplateRef:
                   name: {{ .Release.Name }}-pipeline
                   template: clone
