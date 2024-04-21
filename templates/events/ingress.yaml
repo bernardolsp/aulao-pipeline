@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argo-events-webhook
+spec:
+  ingressClassName: cloudflare-tunnel
+  rules:
+  - host: webhook-{{ .Release.Namespace }}.bernardolopes.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argo-events-webhook
+            port:
+              number: 12000
