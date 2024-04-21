@@ -3,6 +3,7 @@ kind: Sensor
 metadata:
   name: webhook
 spec:
+  eventBusName: default
   template:
     serviceAccountName: argo-events-webhook-sa
   dependencies:

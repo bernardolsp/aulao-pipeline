@@ -8,7 +8,7 @@ spec:
       - port: 12000
         targetPort: 12000
   webhook:
-    example:
+    webhook:
       port: "12000"
       endpoint: /
       method: POST
