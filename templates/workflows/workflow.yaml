@@ -1,0 +1,133 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: {{ .Release.Name }}-pipeline-
+  namespace: argo
+spec:
+  entrypoint: clone
+
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  
+  volumes:
+  - name: docker-credentials
+    secret:
+      secretName: docker-credentials
+      items: 
+      - key: config.json
+        path: config.json
+
+  templates:
+  - name: clone
+    steps:
+    - - name: clone
+        template: clone-repo
+    - - name: test
+        template: test
+    - - name: get-hash
+        template: get-hash
+    - - name: build
+        template: build
+        arguments:
+          parameters:
+          - name: commit
+            value: "{{steps.get-hash.outputs.parameters.result}}"
+
+  - name: clone-repo
+    container: 
+      image: alpine/git
+      command: [git]
+      args: ["clone", {{ .Values.application.applicationRepo }}, "/src"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+
+  - name: test
+    container: 
+      image: {{ If .Values.application.language "go" "golang:1.22" }}
+      command: [sh, -c]
+      args: ["cd /src && go get . && go test -v ."]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+
+  - name: get-hash
+    container: 
+      image: alpine/git
+      command: [sh, -c]
+      args: ["cd /src && git rev-parse --short HEAD > /tmp/commit_hash.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          path: /tmp/commit_hash.txt
+
+  - name: build
+    inputs:
+      parameters:
+      - name: commit
+    container: 
+      image: gcr.io/kaniko-project/executor:debug
+      command: [/kaniko/executor]
+      args: 
+        - --context=/src
+        - --dockerfile=/src/Dockerfile
+        - --destination={{ .Values.application.containerRepository }}:{{inputs.parameters.commit}}
+        - --destination={{ .Values.application.containerRepository }}:latest
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+      - name: docker-credentials
+        mountPath: /kaniko/.docker/
+
+  - name: clone-yaml-repo
+    container: 
+      image: alpine/git
+      command: [git]
+      args: 
+      - clone
+      - https://$GIT_TOKEN@{{ .Values.application.yamlRepo }}
+      - /src/yamlrepo
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+      env: 
+      - name: GIT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: git-token
+            key: token
+
+  - name: sed-yaml
+    container: 
+      image: alpine/sed
+      command: [sed]
+      args: ["-i", "/^ *image:/s|.*|  image: {{ .Values.application.containerRepository }}:{{inputs.parameters.commit}} |", "/src/yamlrepo/values.yaml"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+  
+  - name: commit-push
+    container: 
+      image: alpine/git
+      command: [sh, -c]
+      args: 
+        - cd /src/yamlrepo 
+        - git config --local user.email "action@github.com"
+        - git config --local user.name "Argo Workflows"
+        - git add . 
+        - git commit -m 'Update image'
+        - git push
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+      

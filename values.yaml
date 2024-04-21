@@ -1,0 +1,9 @@
+application:
+  image: devlopesbernardo/go-todo:latest
+  imagePullPolicy: Always
+  port: 3000
+  replicas: 1
+  language: go
+  applicationRepo: https://github.com/bernardolsp/go-todo.git
+  yamlRepo: github.com/bernardolsp/aulao-pipeline.git
+  containerRepository: devlopesbernardo/go-todo
