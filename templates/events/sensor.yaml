@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Sensor
 metadata:
-  name: {{ .Release.Name }}-webhook-sensor
+  name: webhook
 spec:
   template:
     serviceAccountName: argo-events-webhook-sa
   dependencies:
-    - name: {{ .Release.Name }}-webhook
-      eventSourceName: {{ .Release.Name }}-webhook
-      eventName: {{ .Release.Name }}-webhook
+    - name: webhook
+      eventSourceName: webhook
+      eventName: webhook
   triggers:
     - template:
         name: webhook-pod-trigger
