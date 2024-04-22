@@ -1,5 +1,5 @@
 application:
-  image: devlopesbernardo/go-todo:a7fa9d9
+  image: devlopesbernardo/go-todo:a8f792b
   imagePullPolicy: Always
   port: 3000
   replicas: 1
